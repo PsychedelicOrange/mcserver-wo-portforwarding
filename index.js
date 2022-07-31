@@ -5,6 +5,7 @@ var MinecraftServer = require ('minecraft-java-server');
 
 var ip;
 var is_server_on = false;
+var is_debug_on = false;
 // EDIT YOUR CUSTOM STUFF FROM HERE *******************************************
 const command_prefix = "!";
 const server = new MinecraftServer.MinecraftServer({
@@ -43,25 +44,41 @@ client.on('message', async message => {
     const commandBody = message.content.slice(command_prefix.length);
     const args = commandBody.split(' ');
     const command = args.shift().toLowerCase();
+    if (command === "debug") {
+        if(!is_debug_on && !is_server_on)
+        {
+            await ngrok.authtoken(process.env.AUTH_TOKEN); 
+	        ip = await ngrok.connect({proto: 'tcp', addr: 22});
+	        message.reply('Server Started ! Join at ' + ip.slice(6));
+            client.user?.setPresence({ activities: [{ name: "debug",type: 'PLAYING' }], status: 'dnd' });// Commands
+            is_debug_on = true;
+        }
+    }
     if (command === "start") {
 	if(is_server_on){
 		message.reply('Server is already running');
 	}else{
+        if(!is_debug_on)
+        {
 	        server.start();
             await ngrok.authtoken(process.env.AUTH_TOKEN); 
 	        ip = await ngrok.connect({proto: 'tcp', addr: 25565});
 	        message.reply('Server Started ! Join at ' + ip.slice(6));
             client.user?.setPresence({ activities: [{ name: ip.slice(6),type: 'PLAYING' }], status: 'online' });// Commands
             is_server_on = true;
+        }
 	}
     }
     else if (command === "stop") {
         if(is_server_on){
-		    server.stop();
-	        ngrok.disconnect(ip);
-	        message.reply('Server stopped !');
-            client.user?.setPresence({ activities: [{ name: '!help',type: 'LISTENING' }], status: 'idle' });// Commands
-            is_server_on = false;
+            if(!is_debug_on)
+                {
+                    server.stop();
+                    ngrok.disconnect(ip);
+                    message.reply('Server stopped !');
+                    client.user?.setPresence({ activities: [{ name: '!help',type: 'LISTENING' }], status: 'idle' });// Commands
+                    is_server_on = false;
+                }
 	}else{
 		message.reply('No server was running');
 	}
