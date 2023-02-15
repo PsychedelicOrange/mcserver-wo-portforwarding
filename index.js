@@ -60,7 +60,7 @@ client.on('message', async message => {
 	}else{
         if(!is_debug_on)
         {
-	        server.start();
+	        await server.start();
             await ngrok.authtoken(process.env.AUTH_TOKEN); 
 	        ip = await ngrok.connect({proto: 'tcp', addr: 25565});
 	        message.reply('Server Started ! Join at ' + ip.slice(6));
