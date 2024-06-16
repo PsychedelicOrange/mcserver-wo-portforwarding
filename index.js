@@ -1,6 +1,6 @@
 const { Client, Intents, ClientUser } = require('discord.js');
 require('dotenv').config();
-const ngrok = require('ngrok');
+const ngrok = require('@ngrok/ngrok');
 var MinecraftServer = require ('minecraft-java-server');
 
 var ip;
@@ -8,6 +8,7 @@ var is_server_on = false;
 var is_debug_on = false;
 // EDIT YOUR CUSTOM STUFF FROM HERE *******************************************
 const command_prefix = "!";
+
 const server = new MinecraftServer.MinecraftServer({
     jar: 'server.jar',
     path: 'server/', // replace with path to your server jar
@@ -21,7 +22,7 @@ const server = new MinecraftServer.MinecraftServer({
     properties: {
         motd: "Minecraft server hosted with minecraft-java-server",
         "max-players": 10,
-        //"online-mode": false
+        "online-mode": false
     }
 });
 // EDIT YOUR CUSTOM STUFF TILL HERE *************************************************
@@ -48,8 +49,9 @@ client.on('message', async message => {
         if(!is_debug_on && !is_server_on)
         {
             await ngrok.authtoken(process.env.AUTH_TOKEN); 
-	        ip = await ngrok.connect({proto: 'tcp', addr: 22});
-	        message.reply('Server Started ! Join at ' + ip.slice(6));
+	        ip = await ngrok.forward({proto: 'tcp', addr: 22});
+            console.log(ip);
+	        message.reply('Server Started ! Join at ' + ip.url().slice(6));
             client.user?.setPresence({ activities: [{ name: "debug",type: 'PLAYING' }], status: 'dnd' });// Commands
             is_debug_on = true;
         }
@@ -62,9 +64,9 @@ client.on('message', async message => {
         {
 	        await server.start();
             await ngrok.authtoken(process.env.AUTH_TOKEN); 
-	        ip = await ngrok.connect({proto: 'tcp', addr: 25565});
-	        message.reply('Server Started ! Join at ' + ip.slice(6));
-            client.user?.setPresence({ activities: [{ name: ip.slice(6),type: 'PLAYING' }], status: 'online' });// Commands
+	        ip = await ngrok.forward({proto: 'tcp', addr: 25565});
+	        message.reply('Server Started ! Join at ' + ip.url().slice(6));
+            client.user?.setPresence({ activities: [{ name: ip.url().slice(6),type: 'PLAYING' }], status: 'online' });// Commands
             is_server_on = true;
         }
 	}
@@ -74,7 +76,7 @@ client.on('message', async message => {
             if(!is_debug_on)
                 {
                     server.stop();
-                    ngrok.disconnect(ip);
+                    await ngrok.disconnect();
                     message.reply('Server stopped !');
                     client.user?.setPresence({ activities: [{ name: '!help',type: 'LISTENING' }], status: 'idle' });// Commands
                     is_server_on = false;
